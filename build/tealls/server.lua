@@ -32,9 +32,9 @@ local server = {
       hoverProvider = true,
       definitionProvider = true,
 
-
-
-
+      completionProvider = {
+         triggerCharacters = { ".", ":" },
+      },
    },
 }
 

@@ -239,6 +239,21 @@ function Document:get_parent(tk: Token): Token
    end
 end
 
+function Document:get_type_info_from_id(id: integer): tl.TypeInfo
+   local tr = self:get_type_report()
+   if not tr then
+      return
+   end
+
+   local info = tr.types[id]
+
+   if info and info.ref then
+      return self:get_type_info_from_id(info.ref)
+   end
+
+   return info
+end
+
 function Document:get_type_info(tk: Token): tl.TypeInfo
    local tr = self:get_type_report()
    if not tr then
@@ -264,8 +279,10 @@ function Document:get_type_info(tk: Token): tl.TypeInfo
 
    local symbols <const> = tl.symbols_in_scope(tr, tk.y + 1, tk.x + 1)
    local type_id <const> = symbols[tk.tk]
-   if tr.types[type_id] then
-      return tr.types[type_id]
+
+   local info = self:get_type_info_from_id(type_id)
+   if info then
+      return info
    end
 
    local global_type_id = tr.globals[tk.tk]
@@ -284,6 +301,25 @@ function Document:type_information_at(where: lsp.Position): tl.TypeInfo
    util.log('Got token', tk)
 
    return self:get_type_info(tk)
+end
+
+function Document:symbols_in_scope_at(where: lsp.Position): {string}
+   local tr = self:get_type_report()
+   if not tr then
+      return
+   end
+
+   local tk <const> = get_token_at(self:get_tokens(), where.line + 1, where.character + 1)
+   if not tk then
+      return
+   end
+
+   util.log('Got token', tk)
+
+
+   local symbols = tl.symbols_in_scope(tr, tk.y + 1, tk.x + 1)
+   util.log('SYMBOLS ', symbols)
+
 end
 
 local function indent(n: number): string

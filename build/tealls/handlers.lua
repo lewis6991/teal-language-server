@@ -1,4 +1,4 @@
-
+local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local pairs = _tl_compat and _tl_compat.pairs or pairs
 
 
 local lfs = require("lfs")
@@ -152,6 +152,40 @@ handlers["textDocument/hover"] = function(params, id)
          ["end"] = lsp.position(pos.line, pos.character + #tk.tk),
       },
    })
+end
+
+handlers["textDocument/completion"] = function(params, id)
+   local doc = get_doc(params)
+   if not doc then
+      return
+   end
+
+   local pos = params.position
+   pos.character = pos.character - 2
+   local tk = doc:token_at(pos)
+   if not tk then
+      util.log('No token')
+      rpc.respond(id, nil)
+      return
+   end
+
+   local info = doc:type_information_at(pos)
+   if not info then
+      util.log('No info')
+      rpc.respond(id, nil)
+      return
+   end
+
+   if info and info.fields then
+      local items = {}
+      for f, _id in pairs(info.fields) do
+         items[#items + 1] = {
+            label = f,
+            kind = lsp.completion_item_kind.Field,
+         }
+      end
+      rpc.respond(id, items)
+   end
 end
 
 

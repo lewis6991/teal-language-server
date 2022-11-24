@@ -154,6 +154,40 @@ handlers["textDocument/hover"] = function(params: Params, id: integer)
    })
 end
 
+handlers["textDocument/completion"] = function(params: Params, id: integer)
+   local doc <const> = get_doc(params)
+   if not doc then
+      return
+   end
+
+   local pos <const> = params.position as lsp.Position
+   pos.character = pos.character - 2
+   local tk <const> = doc:token_at(pos)
+   if not tk then
+      util.log('No token')
+      rpc.respond(id, nil)
+      return
+   end
+
+   local info <const> = doc:type_information_at(pos)
+   if not info then
+      util.log('No info')
+      rpc.respond(id, nil)
+      return
+   end
+
+   if info and info.fields then
+      local items: {lsp.CompletionItem} = {}
+      for f, _id in pairs(info.fields) do
+         items[#items+1] = {
+            label = f,
+            kind = lsp.completion_item_kind.Field
+         }
+      end
+      rpc.respond(id, items as {string: any})
+   end
+end
+
 -- Wrap some logs around each handler for debugging
 return setmetatable({}, {
    __index = function(_self: {Name:Method}, key: Name): Method
